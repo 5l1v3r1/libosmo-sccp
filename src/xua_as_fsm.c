@@ -95,14 +95,16 @@ static struct osmo_ss7_asp *xua_as_select_asp_roundrobin(struct osmo_ss7_as *as)
 
 	first_idx = (as->cfg.last_asp_idx_sent + 1) % ARRAY_SIZE(as->cfg.asps);
 	i = first_idx;
+	LOGPFSM(as->fi, "tx loadshare: first_idx=%u/%lu\n", first_idx, ARRAY_SIZE(as->cfg.asps));
 	do {
+		LOGPFSM(as->fi, "tx loadshare: checking asp %u: %p\n", i, as->cfg.asps[i]);
 		asp = as->cfg.asps[i];
 		if (asp && osmo_ss7_asp_active(asp))
 			break;
 		i = (i + 1) % ARRAY_SIZE(as->cfg.asps);
 	} while (i != first_idx);
 	as->cfg.last_asp_idx_sent = i;
-
+	LOGPFSM(as->fi, "tx loadshare: returning asp %u: %p\n", i, as->cfg.asps[i]);
 	return asp;
 }
 
@@ -110,6 +112,8 @@ static struct osmo_ss7_asp *xua_as_select_asp_roundrobin(struct osmo_ss7_as *as)
 int xua_as_transmit_msg(struct osmo_ss7_as *as, struct msgb *msg)
 {
 	struct osmo_ss7_asp *asp = NULL;
+
+	LOGPFSM(as->fi, "Tx using traffic mode %s\n", osmo_ss7_as_traffic_mode_name(as->cfg.mode));
 
 	switch (as->cfg.mode) {
 	case OSMO_SS7_AS_TMOD_OVERRIDE:
@@ -132,7 +136,7 @@ int xua_as_transmit_msg(struct osmo_ss7_as *as, struct msgb *msg)
 		msgb_free(msg);
 		return -1;
 	}
-
+	LOGPASP(asp, DLSS7, LOGL_ERROR, "selected for transmission\n");
 	return osmo_ss7_asp_send(asp, msg);
 }
 
